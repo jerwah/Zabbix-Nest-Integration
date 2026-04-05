@@ -48,21 +48,16 @@ Zabbix host using the device ID macro `{$NEST_DEVICE_ID}`.
 
 ```
 Zabbix-Nest-Integration/
-├── .gitignore                          ← Prevents credentials from reaching GitHub
-├── CHANGELOG.md                        ← Version history
-├── LICENSE                             ← MIT License
-├── README.md                           ← This file
+├── .gitignore                          
+├── CHANGELOG.md                        
+├── LICENSE                             
+├── README.md                           
 ├── scripts/
-│   ├── nest_to_zabbix.py              ← Python helper script (runs on Zabbix server)
-│   └── nest_to_zabbix.conf.example   ← Example config (safe fake values — commit this)
+│   ├── nest_to_zabbix.py             ← Python helper script (runs on Zabbix server)
+│   └── nest_to_zabbix.conf.example   ← Example config
 └── template/
     └── zbx_template_google_nest.yaml  ← Zabbix 7.x import template
 ```
-
-> **Your real config file** (`nest_to_zabbix.conf`) lives at `/etc/zabbix/` on the
-> server — NOT in this folder. It is intentionally blocked by `.gitignore` and will
-> never appear on GitHub.
-
 ---
 
 ## Prerequisites
@@ -236,10 +231,9 @@ curl -s -X GET \
 Device IDs are in the format:
 `enterprises/<sdm_project_id>/devices/<unique_device_id>`
 
-> **Tip:** Once you have completed Step 2.2 (creating and populating
-> `/etc/zabbix/nest_to_zabbix.conf`), you can also run
+> **Tip:** Once you have completed Step 2.2 (creating and populating: `/etc/zabbix/nest_to_zabbix.conf`), you can also run:
 > `sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices`
->     Should give you a clean list without needing to handle access tokens manually.
+> This will give you a clean list of IDs/Names without needing to handle access tokens manually.
 
 ---
 
@@ -247,16 +241,17 @@ Device IDs are in the format:
 
 ### Step 2.1 — Deploy the Script
 
+# Confirm the Zabbix external scripts path matches your config
 ```bash
+# Confirm your zabbix ExternalScripts Path tweak subsequent steps as necessary
+sudo grep ExternalScripts /etc/zabbix/zabbix_server.conf
+
 # Copy the script to the Zabbix external scripts directory
 sudo cp scripts/nest_to_zabbix.py /usr/lib/zabbix/externalscripts/
 
 # Make it executable
 sudo chmod 755 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py
 
-# Confirm the Zabbix external scripts path matches your config
-# (check ExternalScripts= in /etc/zabbix/zabbix_server.conf)
-sudo grep ExternalScripts /etc/zabbix/zabbix_server.conf
 ```
 
 ### Step 2.2 — Create the Credentials Config File
@@ -293,37 +288,16 @@ For each thermostat you want to monitor:
 4. Under **Macros**, add a macro named `{$NEST_DEVICE_ID}` (include the `{$` and `}`) and
    set its value to the full device resource name from Step 1.6, e.g.:
    `enterprises/abc123/devices/xyz789`
-   > Run `sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices`
-   > to get the exact resource name and room label for each thermostat.
-
+   > Reminder:
+   ```bash
+   sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices
+   ```
+   to get the ${NEST_DEVICE_ID} values and room label for each thermostat. 
 ---
 
-## Security Notes
+## Possible Future Enhancements
 
-- Credentials are stored in `/etc/zabbix/nest_to_zabbix.conf` with `chmod 600`
-- The `.gitignore` in this repo blocks all `.conf`, `.cfg`, and `.ini` files from ever being committed
-- The script never echoes or logs credential values
-- The example config file (`nest_to_zabbix.conf.example`) contains only fake placeholder values and is safe to publish
-
----
-
-## Development Status
-
-| Component | Status |
-|---|---|
-| Project structure & config | ✅ Complete |
-| Google SDM API credentials setup guide | ✅ Complete |
-| Python helper script | ✅ Complete |
-| Zabbix YAML template | ✅ Complete |
-| Full multi-thermostat support | ✅ Complete |
-| Trigger definitions | ✅ Complete |
-
----
-
-## Future Enhancements
-
-Ideas for future development (not yet planned for implementation):
-
+Ideas for future development (not yet planned):
 - **Interactive credential setup script** — a guided CLI wizard (similar to how `rclone config` works) that walks through the Google OAuth flow, exchanges credentials, and writes the config file automatically, eliminating the manual steps in Part 1
 
 ---
