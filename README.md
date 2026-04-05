@@ -344,3 +344,8 @@ improvements, feel free to open an Issue or Pull Request on GitHub.
 ## License
 
 MIT — see [LICENSE](LICENSE) for full text.
+
+
+## AI Disclaimer
+
+Claude Sonnet 4.6 was heavily used in the creation of this project but an actual human did actually do some stuff too.
