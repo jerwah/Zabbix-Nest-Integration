@@ -1,15 +1,12 @@
 zabbix_export:
   version: "7.4"
-  date: "2026-04-05T00:00:00Z"
 
-  # ============================================================
-  # PLACEHOLDER TEMPLATE — not yet functional
-  # Full item, trigger, and macro definitions will be added in
-  # the next development phase. See README.md for status.
-  # ============================================================
+  template_groups:
+    - uuid: 8b73a9e5c8b347a99094fad5e5d9b771
+      name: "Templates/IoT"
 
   templates:
-    - uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+    - uuid: 85a025a9aebd4621bd95b015cc672984
       template: "Google Nest Thermostat"
       name: "Google Nest Thermostat"
       description: >
@@ -20,7 +17,10 @@ zabbix_export:
           - Current ambient temperature (°C)
           - Target/set temperature (°C)
           - Current relative humidity (%)
-          - Current thermostat mode (e.g. HEAT, COOL, MANUAL_ECO, OFF)
+          - Current thermostat mode (HEAT, COOL, HEATCOOL, MANUAL_ECO, OFF)
+
+        Each thermostat is monitored as a separate Zabbix host.
+        Set {$NEST_DEVICE_ID} on each host to the full SDM device resource name.
 
         Tested on: Zabbix 7.4.8 / Ubuntu / Google SDM API (April 2026)
         Author: jerwah — https://github.com/jerwah
@@ -32,16 +32,153 @@ zabbix_export:
         - macro: "{$NEST_DEVICE_ID}"
           value: ""
           description: >
-            The SDM device ID for the thermostat to monitor.
+            Full SDM device resource name for this thermostat.
             Format: enterprises/<sdm_project_id>/devices/<device_id>
-            Required when monitoring a specific thermostat from multiple devices.
+            Run nest_to_zabbix.py --list-devices to find your device IDs.
+            If only one thermostat exists, this can be left empty.
 
         - macro: "{$NEST_SCRIPT_PATH}"
           value: "/usr/lib/zabbix/externalscripts/nest_to_zabbix.py"
           description: >
-            Full path to the nest_to_zabbix.py script on the Zabbix server.
+            Deployment reference only — shows the expected location of the
+            helper script on the Zabbix server. Not used directly in item
+            keys; update if you deploy the script to a non-standard path.
 
-      # Items, triggers, and graphs will be defined here in a future release.
-      items: []
-      triggers: []
-      graphs: []
+        - macro: "{$NEST_TEMP_HIGH}"
+          value: "28"
+          description: "Trigger threshold: temperature above this value (°C) raises a Warning."
+
+        - macro: "{$NEST_TEMP_LOW}"
+          value: "15"
+          description: "Trigger threshold: temperature below this value (°C) raises a Warning."
+
+        - macro: "{$NEST_HUMIDITY_HIGH}"
+          value: "65"
+          description: "Trigger threshold: humidity above this value (%) raises a Warning."
+
+        - macro: "{$NEST_HUMIDITY_LOW}"
+          value: "30"
+          description: "Trigger threshold: humidity below this value (%) raises a Warning."
+
+      items:
+        - uuid: df828c8328f64297a3e9b722c66d3cfc
+          name: "Current Temperature"
+          type: EXTERNAL
+          key: "nest_to_zabbix.py[--metric,current_temp,--device,{$NEST_DEVICE_ID}]"
+          delay: 5m
+          value_type: FLOAT
+          units: "°C"
+          history: 90d
+          trends: 365d
+          description: "Current ambient temperature reported by the thermostat sensor."
+          tags:
+            - tag: component
+              value: temperature
+          triggers:
+            - uuid: 5e02f361bbdc4637a9604011221cecf2
+              expression: "nodata(/Google Nest Thermostat/nest_to_zabbix.py[--metric,current_temp,--device,{$NEST_DEVICE_ID}],15m)=1"
+              name: "No data received from {HOST.NAME}"
+              priority: AVERAGE
+              description: "The thermostat has not returned data for 15 minutes. Check that the helper script is reachable and credentials are valid."
+              tags:
+                - tag: scope
+                  value: availability
+            - uuid: b255b44e24f6402db7d7fe1302c5d0ca
+              expression: "last(/Google Nest Thermostat/nest_to_zabbix.py[--metric,current_temp,--device,{$NEST_DEVICE_ID}])>{$NEST_TEMP_HIGH}"
+              name: "Temperature too high on {HOST.NAME} (>{$NEST_TEMP_HIGH}°C)"
+              priority: WARNING
+              description: "Current temperature exceeds the {$NEST_TEMP_HIGH}°C threshold."
+              tags:
+                - tag: scope
+                  value: temperature
+            - uuid: 41d9b32aae3f41cba9efc6c50a0d9fcb
+              expression: "last(/Google Nest Thermostat/nest_to_zabbix.py[--metric,current_temp,--device,{$NEST_DEVICE_ID}])<{$NEST_TEMP_LOW}"
+              name: "Temperature too low on {HOST.NAME} (<{$NEST_TEMP_LOW}°C)"
+              priority: WARNING
+              description: "Current temperature is below the {$NEST_TEMP_LOW}°C threshold."
+              tags:
+                - tag: scope
+                  value: temperature
+
+        - uuid: 078f2b162d744009ab7fe06d82875ffa
+          name: "Set Temperature"
+          type: EXTERNAL
+          key: "nest_to_zabbix.py[--metric,set_temp,--device,{$NEST_DEVICE_ID}]"
+          delay: 5m
+          value_type: FLOAT
+          units: "°C"
+          history: 90d
+          trends: 365d
+          description: "Target temperature the thermostat is set to maintain. In MANUAL_ECO mode this reflects the eco heat setpoint. Not available when mode is OFF."
+          tags:
+            - tag: component
+              value: temperature
+
+        - uuid: 898b7653fc3a4b57ae6b491c2cf7c4d2
+          name: "Humidity"
+          type: EXTERNAL
+          key: "nest_to_zabbix.py[--metric,humidity,--device,{$NEST_DEVICE_ID}]"
+          delay: 5m
+          value_type: FLOAT
+          units: "%"
+          history: 90d
+          trends: 365d
+          description: "Current relative humidity (%) reported by the thermostat sensor."
+          tags:
+            - tag: component
+              value: humidity
+          triggers:
+            - uuid: 6a8707b1c4e043f39725bcedd1dda155
+              expression: "last(/Google Nest Thermostat/nest_to_zabbix.py[--metric,humidity,--device,{$NEST_DEVICE_ID}])>{$NEST_HUMIDITY_HIGH}"
+              name: "Humidity too high on {HOST.NAME} (>{$NEST_HUMIDITY_HIGH}%)"
+              priority: WARNING
+              description: "Humidity exceeds the {$NEST_HUMIDITY_HIGH}% threshold."
+              tags:
+                - tag: scope
+                  value: humidity
+            - uuid: 74625190e2b546d6b23e8e79d425f72a
+              expression: "last(/Google Nest Thermostat/nest_to_zabbix.py[--metric,humidity,--device,{$NEST_DEVICE_ID}])<{$NEST_HUMIDITY_LOW}"
+              name: "Humidity too low on {HOST.NAME} (<{$NEST_HUMIDITY_LOW}%)"
+              priority: WARNING
+              description: "Humidity is below the {$NEST_HUMIDITY_LOW}% threshold."
+              tags:
+                - tag: scope
+                  value: humidity
+
+        - uuid: c7e98828fb2842fbb53f3b9076b5fccc
+          name: "Thermostat Mode"
+          type: EXTERNAL
+          key: "nest_to_zabbix.py[--metric,mode,--device,{$NEST_DEVICE_ID}]"
+          delay: 5m
+          value_type: TEXT
+          history: 90d
+          trends: "0"
+          description: "Current operating mode of the thermostat. Possible values: HEAT, COOL, HEATCOOL, MANUAL_ECO, OFF"
+          tags:
+            - tag: component
+              value: mode
+
+  graphs:
+    - uuid: d08e71ba47f941548fbee3840f648505
+      name: "Temperature"
+      graph_items:
+        - sortorder: "0"
+          color: EE0000
+          item:
+            host: "Google Nest Thermostat"
+            key: "nest_to_zabbix.py[--metric,current_temp,--device,{$NEST_DEVICE_ID}]"
+        - sortorder: "1"
+          color: 0000EE
+          drawtype: DASHED_LINE
+          item:
+            host: "Google Nest Thermostat"
+            key: "nest_to_zabbix.py[--metric,set_temp,--device,{$NEST_DEVICE_ID}]"
+
+    - uuid: cdfe8fb2255f4ab98b6a01a401f59dd1
+      name: "Humidity"
+      graph_items:
+        - sortorder: "0"
+          color: 0080FF
+          item:
+            host: "Google Nest Thermostat"
+            key: "nest_to_zabbix.py[--metric,humidity,--device,{$NEST_DEVICE_ID}]"

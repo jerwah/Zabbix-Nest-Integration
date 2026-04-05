@@ -11,16 +11,18 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 ---
 
 ## [Unreleased]
-- Initial project scaffold and repository setup
 
 ---
 
 ## [0.1.0] - 2026-04-05
 ### Added
-- Initial repository structure (`scripts/`, `template/`)
-- MIT License
-- `.gitignore` with credential file protection
-- Placeholder Python helper script (`nest_to_zabbix.py`)
-- Placeholder config example (`nest_to_zabbix.conf.example`)
-- Placeholder Zabbix 7.x YAML template (`zbx_template_google_nest.yaml`)
-- README with Google SDM API setup instructions (as of April 2026)
+- Python helper script (`nest_to_zabbix.py`) using Google SDM API with stdlib only (no third-party dependencies)
+- OAuth 2.0 authentication via Web application client with refresh token
+- Metrics: `current_temp`, `set_temp`, `humidity`, `mode` (with eco mode support)
+- `--list-devices` flag showing device resource names and Google Home room names
+- Per-invocation device data cache (`/tmp/nest_zabbix_<id>.json`, 5-minute TTL) with global lock to prevent concurrent API floods
+- Clear, actionable error messages for HTTP 429 rate limit responses
+- Zabbix 7.x YAML template: 4 items, 5 triggers, 2 graphs, 6 macros (importable, tested on 7.4.8)
+- Config example (`nest_to_zabbix.conf.example`) with README label comments for each field
+- `.gitignore` blocking credential files from version control
+- Full setup README: Google Cloud project → OAuth consent screen → credentials → Device Access enrollment → authorization flow → Zabbix deployment (Steps 1.1–2.4)

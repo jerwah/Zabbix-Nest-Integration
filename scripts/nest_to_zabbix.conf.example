@@ -22,25 +22,29 @@
 
 [google_sdm]
 
+# ── README label: "Project ID" ───────────────────────────────────────────────
 # Your Google Cloud Project ID
-# Found in: Google Cloud Console > Project Selector (top bar)
+# Found in: Google Cloud Console > project dropdown (top bar)
 project_id = YOUR_GOOGLE_CLOUD_PROJECT_ID_HERE
 
+# ── README label: "Client ID" ────────────────────────────────────────────────
 # OAuth 2.0 Client ID
 # Found in: Google Cloud Console > APIs & Services > Credentials
 client_id = YOUR_CLIENT_ID_HERE.apps.googleusercontent.com
 
+# ── README label: "Client Secret" ────────────────────────────────────────────
 # OAuth 2.0 Client Secret
 # Found in: Google Cloud Console > APIs & Services > Credentials
 client_secret = YOUR_CLIENT_SECRET_HERE
 
-# OAuth 2.0 Refresh Token
-# Obtained by completing the OAuth authorization flow (see README)
+# ── README label: "refresh_token" ────────────────────────────────────────────
+# OAuth 2.0 Refresh Token — obtained by completing the authorization flow
 # NOTE: Refresh tokens can expire. If the script stops working,
-# you may need to re-authorize and update this value.
+# re-run the authorization flow in the README and update this value.
 refresh_token = YOUR_REFRESH_TOKEN_HERE
 
+# ── README label: "Device Access Project ID" ─────────────────────────────────
 # Google Device Access Project ID
 # Found in: Google Device Access Console (console.nest.google.com/device-access)
-# NOTE: This is DIFFERENT from the Google Cloud Project ID above.
+# ⚠ This is DIFFERENT from the Google Cloud Project ID above.
 sdm_project_id = YOUR_SDM_PROJECT_ID_HERE
