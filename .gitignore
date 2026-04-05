@@ -1,0 +1,62 @@
+# ============================================================
+# Zabbix-Nest-Integration — .gitignore
+# ============================================================
+# This file tells Git which files to NEVER track or publish.
+# Even if these files exist locally, they will never appear
+# on GitHub. This is your primary guard against leaking
+# API credentials.
+# ============================================================
+
+# --- Credential & config files ---
+# The real config file (with your actual API keys) must NEVER
+# be committed. Only the .example version (with fake values)
+# should ever be pushed to GitHub.
+scripts/*.conf
+scripts/*.cfg
+scripts/*.ini
+
+# --- Python runtime files ---
+# These are generated automatically when Python runs and
+# serve no purpose in a public repository.
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# --- Virtual environment folders ---
+# If you set up a Python virtual environment locally, exclude it.
+venv/
+.venv/
+env/
+.env/
+
+# --- OS-generated junk files ---
+# Windows
+Thumbs.db
+Desktop.ini
+# macOS (in case you ever open this on a Mac)
+.DS_Store
+# Linux
+*~
+
+# --- Editor/IDE files ---
+.vscode/settings.json
+.idea/
+*.swp
+*.swo
+
+# --- Log files ---
+*.log
+
+# ============================================================
+# REMINDER: The file you are allowed to commit is:
+#   scripts/nest_to_zabbix.conf.example   ← safe fake values
+#
+# The file you must NEVER commit is:
+#   scripts/nest_to_zabbix.conf           ← real credentials
+# ============================================================

@@ -1,0 +1,47 @@
+zabbix_export:
+  version: "7.4"
+  date: "2026-04-05T00:00:00Z"
+
+  # ============================================================
+  # PLACEHOLDER TEMPLATE — not yet functional
+  # Full item, trigger, and macro definitions will be added in
+  # the next development phase. See README.md for status.
+  # ============================================================
+
+  templates:
+    - uuid: a1b2c3d4-e5f6-7890-abcd-ef1234567890
+      template: "Google Nest Thermostat"
+      name: "Google Nest Thermostat"
+      description: >
+        Monitors Google Nest Thermostats via the SDM API using an external
+        Python helper script (nest_to_zabbix.py).
+
+        Metrics collected per thermostat device:
+          - Current ambient temperature (°C)
+          - Target/set temperature (°C)
+          - Current relative humidity (%)
+          - Current thermostat mode (e.g. HEAT, COOL, MANUAL_ECO, OFF)
+
+        Tested on: Zabbix 7.4.8 / Ubuntu / Google SDM API (April 2026)
+        Author: jerwah — https://github.com/jerwah
+
+      groups:
+        - name: "Templates/IoT"
+
+      macros:
+        - macro: "{$NEST_DEVICE_ID}"
+          value: ""
+          description: >
+            The SDM device ID for the thermostat to monitor.
+            Format: enterprises/<sdm_project_id>/devices/<device_id>
+            Required when monitoring a specific thermostat from multiple devices.
+
+        - macro: "{$NEST_SCRIPT_PATH}"
+          value: "/usr/lib/zabbix/externalscripts/nest_to_zabbix.py"
+          description: >
+            Full path to the nest_to_zabbix.py script on the Zabbix server.
+
+      # Items, triggers, and graphs will be defined here in a future release.
+      items: []
+      triggers: []
+      graphs: []

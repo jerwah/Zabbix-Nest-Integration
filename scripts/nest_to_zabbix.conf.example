@@ -1,0 +1,46 @@
+# nest_to_zabbix.conf.example
+# ============================================================
+# THIS IS AN EXAMPLE FILE — contains fake placeholder values.
+# It is safe to share publicly and is committed to GitHub.
+#
+# DO NOT put your real credentials here.
+#
+# SETUP INSTRUCTIONS:
+#   1. Copy this file to the real config location:
+#      sudo cp nest_to_zabbix.conf.example /etc/zabbix/nest_to_zabbix.conf
+#
+#   2. Open the real file and replace ALL placeholder values:
+#      sudo nano /etc/zabbix/nest_to_zabbix.conf
+#
+#   3. Lock down the file so ONLY the zabbix user can read it:
+#      sudo chown zabbix:zabbix /etc/zabbix/nest_to_zabbix.conf
+#      sudo chmod 600 /etc/zabbix/nest_to_zabbix.conf
+#
+# See README.md for full instructions on obtaining these values
+# from the Google Cloud Console and Google Device Access Console.
+# ============================================================
+
+[google_sdm]
+
+# Your Google Cloud Project ID
+# Found in: Google Cloud Console > Project Selector (top bar)
+project_id = YOUR_GOOGLE_CLOUD_PROJECT_ID_HERE
+
+# OAuth 2.0 Client ID
+# Found in: Google Cloud Console > APIs & Services > Credentials
+client_id = YOUR_CLIENT_ID_HERE.apps.googleusercontent.com
+
+# OAuth 2.0 Client Secret
+# Found in: Google Cloud Console > APIs & Services > Credentials
+client_secret = YOUR_CLIENT_SECRET_HERE
+
+# OAuth 2.0 Refresh Token
+# Obtained by completing the OAuth authorization flow (see README)
+# NOTE: Refresh tokens can expire. If the script stops working,
+# you may need to re-authorize and update this value.
+refresh_token = YOUR_REFRESH_TOKEN_HERE
+
+# Google Device Access Project ID
+# Found in: Google Device Access Console (console.nest.google.com/device-access)
+# NOTE: This is DIFFERENT from the Google Cloud Project ID above.
+sdm_project_id = YOUR_SDM_PROJECT_ID_HERE
