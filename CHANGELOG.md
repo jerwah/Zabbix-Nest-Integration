@@ -14,6 +14,18 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [0.1.2] - 2026-04-05
+### Changed
+- README restructured for improved readability and flow
+
+---
+
+## [0.1.1] - 2026-04-05
+### Added
+- AI disclaimer to README
+
+---
+
 ## [0.1.0] - 2026-04-05
 ### Added
 - Python helper script (`nest_to_zabbix.py`) using Google SDM API with stdlib only (no third-party dependencies)
