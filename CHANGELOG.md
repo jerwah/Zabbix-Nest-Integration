@@ -14,6 +14,40 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [0.2.0] - 2026-04-13
+### Added
+- `nest_auth_setup.py` — interactive OAuth setup wizard (rclone-style):
+  - Prompts for all credentials with inline hints on where to find each value;
+    if an existing config is found, current values are shown as defaults and
+    can be accepted with Enter
+  - Generates and prints the browser authorization URL (includes `prompt=consent`
+    to guarantee a fresh refresh token regardless of prior authorizations)
+  - Accepts the full redirect URL (or bare code) and parses the authorization
+    code automatically — no manual URL parsing required
+  - Exchanges the code for tokens via the Google token endpoint
+  - Writes `/etc/zabbix/nest_to_zabbix.conf` atomically with `600` permissions
+    owned by the `zabbix` OS user
+  - Detects if not running as root and exits with a clear `sudo` instruction
+    before prompting for any credentials
+  - Confirms the integration works by calling the SDM API and printing all
+    discovered thermostat device IDs and room names
+### Fixed
+- Authorization URL now includes `prompt=consent` — without this parameter
+  Google omits the `refresh_token` from the token response for accounts that
+  have previously authorized the app, causing silent setup failure
+### Changed
+- README Part 1 restructured: Steps 1.1–1.4 remain as manual console steps;
+  Step 1.5 is now the wizard invocation with the old manual flow preserved in
+  a collapsible `<details>` block for reference
+- README Troubleshooting section updated: primary recovery path is now
+  `sudo python3 scripts/nest_auth_setup.py`; manual curl steps moved into a
+  collapsible block
+- README Step 2.2 updated to note that the wizard satisfies this step
+- Both manual authorization URLs in README updated to include `prompt=consent`
+  with an explanatory note
+
+---
+
 ## [0.1.3] - 2026-04-13
 ### Fixed
 - Automatic refresh token rotation: if Google returns a new `refresh_token` alongside

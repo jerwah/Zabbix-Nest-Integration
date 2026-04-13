@@ -54,6 +54,7 @@ Zabbix-Nest-Integration/
 ├── README.md                           
 ├── scripts/
 │   ├── nest_to_zabbix.py             ← Python helper script (runs on Zabbix server)
+│   ├── nest_auth_setup.py            ← Interactive OAuth setup wizard (run once)
 │   └── nest_to_zabbix.conf.example   ← Example config
 └── template/
     └── zbx_template_google_nest.yaml  ← Zabbix 7.x import template
@@ -79,6 +80,11 @@ Before you begin, you need:
 > Device Access Console frequently. The steps below were accurate as of April 2026.
 > Menu names, button labels, and URLs may differ from what you see. If a step doesn't
 > match, refer to the [official SDM quickstart guide](https://developers.google.com/nest/device-access/get-started).
+
+Steps 1.1–1.4 must be completed manually in the Google web consoles. Once done,
+**`nest_auth_setup.py`** handles the rest — it runs the browser authorization flow,
+exchanges credentials, writes the config file, locks it down, and confirms your
+thermostats are visible, all in a single guided session.
 
 ### Step 1.1 — Enable the SDM API in Google Cloud
 
@@ -147,51 +153,21 @@ You can now create the OAuth credentials.
      > enabling them will ask you to configure a Pub/Sub topic that serves no purpose here.
 4. Note the **Device Access Project ID** — this is DIFFERENT from your Cloud Project ID
 
-### Step 1.5 — Authorize Your Google Account (Get Refresh Token)
+### Step 1.5 — Run the Setup Wizard
 
-This step links your Google account to the credentials so the script can access your thermostats.
+Once Steps 1.1–1.4 are complete, run the interactive setup wizard from the repo directory:
 
-**Placeholder reference for this step:**
+```bash
+sudo python3 scripts/nest_auth_setup.py
+```
 
-| Placeholder | What it is | Where you got it |
-|---|---|---|
-| `<SDM_PROJECT_ID>` | **Device Access Project ID** | Step 1.4 — ⚠️ this is **NOT** the Cloud Project ID from Step 1.1 |
-| `<CLIENT_ID>` | OAuth Client ID | Step 1.3 |
-| `<CLIENT_SECRET>` | OAuth Client Secret | Step 1.3 |
-| `<AUTHORIZATION_CODE>` | One-time code from the redirect URL | Sub-step 4 below |
-
-1. Build this URL — replace the placeholders using the table above:
-   ```
-   https://nestservices.google.com/partnerconnections/<SDM_PROJECT_ID>/auth?redirect_uri=https://www.google.com&access_type=offline&response_type=code&scope=https://www.googleapis.com/auth/sdm.service&client_id=<CLIENT_ID>
-   ```
-   > The URL must be a single unbroken line with no spaces.
-
-2. Open that URL in a browser while logged into your Google account
-3. Google will walk you through a consent flow — complete it as follows:
-   - **Allow "Zabbix Nest Monitor" to see information about your home** — click Allow
-   - **Select which thermostats to expose** — each device is listed individually with its
-     own checkbox. Check every thermostat you want Zabbix to be able to poll, then click Next.
-     > Any thermostat you leave unchecked here will be invisible to the script — it will
-     > not appear in `--list-devices` output and cannot be monitored. You can re-run this
-     > flow later if you want to add more devices.
-   - **"Google hasn't verified this app"** — this warning appears because the app is in
-     Testing mode and has not been through Google's formal review process. This is expected
-     and safe for your own personal use. Click **Continue**.
-   - **"Zabbix Nest Monitor wants access to your Google Account"** — review the requested
-     permissions (read-only access to your Nest devices) and click **Allow**.
-4. After confirming, you will be redirected to google.com with a `?code=...` in the URL
-5. Copy that **authorization code** from the URL bar (everything after `code=`, up to `&scope`)
-
-6. Exchange the code for a refresh token — run this command in a terminal, replacing placeholders:
-   ```bash
-   curl -s -X POST https://oauth2.googleapis.com/token \
-     -d "client_id=<CLIENT_ID>" \
-     -d "client_secret=<CLIENT_SECRET>" \
-     -d "code=<AUTHORIZATION_CODE>" \
-     -d "grant_type=authorization_code" \
-     -d "redirect_uri=https://www.google.com"
-   ```
-7. The response will contain a `refresh_token` — save this immediately. It does not appear again.
+The wizard will:
+1. Prompt for your `Cloud Project ID`, `Client ID`, `Client Secret`, and `Device Access Project ID`
+2. Print a browser authorization URL for you to open and complete the consent flow
+3. Ask you to paste the full redirect URL from your browser's address bar — it parses the authorization code for you
+4. Exchange the code for a refresh token automatically
+5. Write `/etc/zabbix/nest_to_zabbix.conf` with `600` permissions owned by the `zabbix` user
+6. Call the SDM API to verify your credentials work and print all discovered thermostats with their device IDs
 
 > **⚠️ Refresh Token Expiry** — Google refresh tokens can be revoked if:
 > - Your app is in "Testing" mode and 7 days pass without use
@@ -201,44 +177,40 @@ This step links your Google account to the credentials so the script can access 
 > As of v0.1.3 the script automatically persists any rotated refresh token back to the
 > config file, so routine rotation is handled for you. However, if the token is outright
 > revoked (e.g. after a password change or a long period of inactivity) you will see an
-> `invalid_grant` error and must re-run the authorization flow in Step 1.5 — see the
-> [Troubleshooting](#troubleshooting) section for step-by-step instructions.
+> `invalid_grant` error — see the [Troubleshooting](#troubleshooting) section, which
+> includes instructions for re-running the wizard to recover.
 
-### Step 1.6 — Find Your Device IDs
+<details>
+<summary>Manual authorization steps (without the wizard)</summary>
 
-Once authenticated, you can list your thermostats and their device IDs.
-
-**Placeholder reference for this step:**
+**Placeholder reference:**
 
 | Placeholder | What it is | Where you got it |
 |---|---|---|
-| `<SDM_PROJECT_ID>` | **Device Access Project ID** | Step 1.4 — ⚠️ **NOT** the Cloud Project ID from Step 1.1 |
+| `<SDM_PROJECT_ID>` | **Device Access Project ID** | Step 1.4 — ⚠️ this is **NOT** the Cloud Project ID from Step 1.1 |
 | `<CLIENT_ID>` | OAuth Client ID | Step 1.3 |
 | `<CLIENT_SECRET>` | OAuth Client Secret | Step 1.3 |
-| `<REFRESH_TOKEN>` | Refresh token | Step 1.5 |
+| `<AUTHORIZATION_CODE>` | One-time code from the redirect URL | Sub-step 4 below |
 
-First, get a temporary access token:
-```bash
-curl -s -X POST https://oauth2.googleapis.com/token \
-  -d "client_id=<CLIENT_ID>" \
-  -d "client_secret=<CLIENT_SECRET>" \
-  -d "refresh_token=<REFRESH_TOKEN>" \
-  -d "grant_type=refresh_token"
-```
+1. Build this URL and open it in a browser while logged into the Google account that owns your Nest devices:
+   ```
+   https://nestservices.google.com/partnerconnections/<SDM_PROJECT_ID>/auth?redirect_uri=https://www.google.com&access_type=offline&prompt=consent&response_type=code&scope=https://www.googleapis.com/auth/sdm.service&client_id=<CLIENT_ID>
+   ```
+   > `prompt=consent` is required — without it Google will not return a `refresh_token`
+   > if this account has previously authorized the app.
+2. Complete the consent flow. After approval, copy the full redirect URL from the browser address bar.
+3. Extract the code from the URL (everything after `code=`, up to `&scope`) and exchange it:
+   ```bash
+   curl -s -X POST https://oauth2.googleapis.com/token \
+     -d "client_id=<CLIENT_ID>" \
+     -d "client_secret=<CLIENT_SECRET>" \
+     -d "code=<AUTHORIZATION_CODE>" \
+     -d "grant_type=authorization_code" \
+     -d "redirect_uri=https://www.google.com"
+   ```
+4. Copy the `refresh_token` from the response and place it in `/etc/zabbix/nest_to_zabbix.conf`.
 
-Then use the `access_token` value from that response to list your devices:
-```bash
-curl -s -X GET \
-  "https://smartdevicemanagement.googleapis.com/v1/enterprises/<SDM_PROJECT_ID>/devices" \
-  -H "Authorization: Bearer <ACCESS_TOKEN>"
-```
-
-Device IDs are in the format:
-`enterprises/<sdm_project_id>/devices/<unique_device_id>`
-
-> **Tip:** Once you have completed Step 2.2 (creating and populating: `/etc/zabbix/nest_to_zabbix.conf`), you can also run:
-> `sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices`
-> This will give you a clean list of IDs/Names without needing to handle access tokens manually.
+</details>
 
 ---
 
@@ -246,9 +218,8 @@ Device IDs are in the format:
 
 ### Step 2.1 — Deploy the Script
 
-# Confirm the Zabbix external scripts path matches your config
 ```bash
-# Confirm your zabbix ExternalScripts Path tweak subsequent steps as necessary
+# Confirm your Zabbix ExternalScripts path (tweak subsequent steps if it differs)
 sudo grep ExternalScripts /etc/zabbix/zabbix_server.conf
 
 # Copy the script to the Zabbix external scripts directory
@@ -256,10 +227,14 @@ sudo cp scripts/nest_to_zabbix.py /usr/lib/zabbix/externalscripts/
 
 # Make it executable
 sudo chmod 755 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py
-
 ```
 
-### Step 2.2 — Create the Credentials Config File
+### Step 2.2 — Credentials Config File
+
+If you used the setup wizard in Step 1.5, `/etc/zabbix/nest_to_zabbix.conf` is already
+written and locked down — nothing more to do here.
+
+If you skipped the wizard and need to create the file manually:
 
 ```bash
 # Copy the example config to the secure location
@@ -291,13 +266,14 @@ For each thermostat you want to monitor:
 2. Set the **Host name** to something descriptive (e.g. `Nest - Living Room`)
 3. Under **Templates**, add **Google Nest Thermostat**
 4. Under **Macros**, add a macro named `{$NEST_DEVICE_ID}` (include the `{$` and `}`) and
-   set its value to the full device resource name from Step 1.6, e.g.:
+   set its value to the full device resource name (printed by the wizard in Step 1.5), e.g.:
    `enterprises/abc123/devices/xyz789`
-   > Reminder:
-   ```bash
-   sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices
-   ```
-   to get the ${NEST_DEVICE_ID} values and room label for each thermostat. 
+   > The setup wizard (Step 1.5) prints device IDs at the end. You can also retrieve
+   > them at any time with:
+   > ```bash
+   > sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices
+   > ```
+
 ---
 
 ## Troubleshooting
@@ -310,9 +286,21 @@ ERROR: Token refresh failed (HTTP 400): {"error": "invalid_grant", ...}
 ```
 
 This means the refresh token stored in `/etc/zabbix/nest_to_zabbix.conf` is no longer
-valid. You need to re-authorize and replace it. Follow the steps below.
+valid. The easiest fix is to re-run the setup wizard — it handles the full re-authorization
+flow and overwrites the config with a fresh token:
 
-**What you need (already from your initial setup):**
+```bash
+sudo python3 scripts/nest_auth_setup.py
+```
+
+When prompted whether to overwrite the existing config, type `y`. The wizard will walk
+through the browser consent flow, exchange a new refresh token, update the file, and
+confirm your thermostats are visible before exiting.
+
+<details>
+<summary>Manual recovery steps (without the wizard)</summary>
+
+**What you need:**
 
 | Value | Where to find it |
 |---|---|
@@ -323,18 +311,15 @@ valid. You need to re-authorize and replace it. Follow the steps below.
 **Step 1 — Build the authorization URL and open it in your browser:**
 
 ```
-https://nestservices.google.com/partnerconnections/<SDM_PROJECT_ID>/auth?redirect_uri=https://www.google.com&access_type=offline&response_type=code&scope=https://www.googleapis.com/auth/sdm.service&client_id=<CLIENT_ID>
+https://nestservices.google.com/partnerconnections/<SDM_PROJECT_ID>/auth?redirect_uri=https://www.google.com&access_type=offline&prompt=consent&response_type=code&scope=https://www.googleapis.com/auth/sdm.service&client_id=<CLIENT_ID>
 ```
 
-Log in with the Google account that owns your Nest thermostat(s) and complete the consent
-flow (approve each prompt). After approval you will land on google.com with a URL like:
-```
-https://www.google.com/?code=4/0Adxxxxx...&scope=...
-```
+> `prompt=consent` is required — without it Google will not return a `refresh_token`
+> if this account has previously authorized the app.
 
-Copy the value after `code=` and before `&scope` — this is your **authorization code**.
+Complete the consent flow. After approval, copy the full redirect URL from the address bar.
 
-> ⚠️ The authorization code expires within a few minutes. Run the next step immediately.
+> ⚠️ Authorization codes expire within minutes — run the next step immediately.
 
 **Step 2 — Exchange the code for a new refresh token:**
 
@@ -347,24 +332,25 @@ curl -s -X POST https://oauth2.googleapis.com/token \
   -d "redirect_uri=https://www.google.com"
 ```
 
-The response will contain a `refresh_token` field. Copy that value.
+Copy the `refresh_token` from the response.
 
-**Step 3 — Update the config file with the new refresh token:**
+**Step 3 — Update the config file:**
 
 ```bash
 sudo nano /etc/zabbix/nest_to_zabbix.conf
 ```
 
-Replace the `refresh_token` value with the one from Step 2, save and exit.
+Replace the `refresh_token` value, save and exit.
 
-**Step 4 — Verify the fix:**
+**Step 4 — Verify:**
 
 ```bash
 sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --metric current_temp
 ```
 
-You should see a temperature value. If you do, Zabbix will recover automatically on the
-next polling cycle.
+You should see a temperature value. Zabbix will recover automatically on the next polling cycle.
+
+</details>
 
 > **Going forward:** As of v0.1.3 the script automatically saves any rotated refresh
 > token back to the config file, so you should not need to do this again unless the token
@@ -376,7 +362,7 @@ next polling cycle.
 ## Possible Future Enhancements
 
 Ideas for future development (not yet planned):
-- **Interactive credential setup script** — a guided CLI wizard (similar to how `rclone config` works) that walks through the Google OAuth flow, exchanges credentials, and writes the config file automatically, eliminating the manual steps in Part 1
+- Nothing currently planned — open an Issue if you have a suggestion
 
 ---
 
