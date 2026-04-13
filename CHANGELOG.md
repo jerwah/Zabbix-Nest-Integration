@@ -14,6 +14,18 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [0.1.3] - 2026-04-13
+### Fixed
+- Automatic refresh token rotation: if Google returns a new `refresh_token` alongside
+  an access token (token rotation), the script now persists it back to the config file
+  atomically. Previously the rotated token was discarded, causing an `invalid_grant`
+  error after sufficient time or API activity.
+### Added
+- README Troubleshooting section with step-by-step re-authorization instructions for
+  the `invalid_grant` / token-expired scenario.
+
+---
+
 ## [0.1.2] - 2026-04-05
 ### Changed
 - README restructured for improved readability and flow

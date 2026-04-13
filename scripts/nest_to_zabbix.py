@@ -60,7 +60,7 @@ import urllib.request
 # -----------------------------------------------------------------
 # Version
 # -----------------------------------------------------------------
-__version__ = "0.1.2"
+__version__ = "0.1.3"
 
 # -----------------------------------------------------------------
 # Constants
@@ -106,6 +106,26 @@ def load_config(path):
 # -----------------------------------------------------------------
 # Authentication
 # -----------------------------------------------------------------
+def _update_refresh_token(new_token):
+    """
+    Persist a rotated refresh token back to the config file.
+
+    Google may return a new refresh_token alongside the access_token when
+    rotating credentials.  If the script discards it the stored token becomes
+    invalid on the next rotation, causing an invalid_grant error.
+    """
+    try:
+        config = configparser.ConfigParser()
+        config.read(CONFIG_PATH)
+        config["google_sdm"]["refresh_token"] = new_token
+        tmp_path = CONFIG_PATH + ".tmp"
+        with open(tmp_path, "w") as f:
+            config.write(f)
+        os.replace(tmp_path, CONFIG_PATH)
+    except OSError:
+        pass  # Non-fatal; old token remains until the next successful rotation
+
+
 def get_access_token(cfg):
     """Exchange the stored refresh token for a short-lived access token."""
     payload = urllib.parse.urlencode({
@@ -127,6 +147,12 @@ def get_access_token(cfg):
 
     if "access_token" not in body:
         error("Token endpoint returned a response without an access_token field")
+
+    # Google may rotate the refresh token; persist the new one if present.
+    new_refresh_token = body.get("refresh_token")
+    if new_refresh_token and new_refresh_token != cfg["refresh_token"]:
+        _update_refresh_token(new_refresh_token)
+        cfg["refresh_token"] = new_refresh_token
 
     return body["access_token"]
 

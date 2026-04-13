@@ -197,7 +197,12 @@ This step links your Google account to the credentials so the script can access 
 > - Your app is in "Testing" mode and 7 days pass without use
 > - You change your Google account password
 > - You revoke access in Google account settings
-> If the script stops authenticating, you may need to repeat Step 1.5.
+>
+> As of v0.1.3 the script automatically persists any rotated refresh token back to the
+> config file, so routine rotation is handled for you. However, if the token is outright
+> revoked (e.g. after a password change or a long period of inactivity) you will see an
+> `invalid_grant` error and must re-run the authorization flow in Step 1.5 — see the
+> [Troubleshooting](#troubleshooting) section for step-by-step instructions.
 
 ### Step 1.6 — Find Your Device IDs
 
@@ -293,6 +298,79 @@ For each thermostat you want to monitor:
    sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --list-devices
    ```
    to get the ${NEST_DEVICE_ID} values and room label for each thermostat. 
+---
+
+## Troubleshooting
+
+### `invalid_grant` — Token has been expired or revoked
+
+Zabbix shows a value like:
+```
+ERROR: Token refresh failed (HTTP 400): {"error": "invalid_grant", ...}
+```
+
+This means the refresh token stored in `/etc/zabbix/nest_to_zabbix.conf` is no longer
+valid. You need to re-authorize and replace it. Follow the steps below.
+
+**What you need (already from your initial setup):**
+
+| Value | Where to find it |
+|---|---|
+| `<SDM_PROJECT_ID>` | Your Device Access project — [console.nest.google.com/device-access](https://console.nest.google.com/device-access) |
+| `<CLIENT_ID>` | Google Cloud → APIs & Services → Credentials |
+| `<CLIENT_SECRET>` | Same credentials page (or the downloaded JSON) |
+
+**Step 1 — Build the authorization URL and open it in your browser:**
+
+```
+https://nestservices.google.com/partnerconnections/<SDM_PROJECT_ID>/auth?redirect_uri=https://www.google.com&access_type=offline&response_type=code&scope=https://www.googleapis.com/auth/sdm.service&client_id=<CLIENT_ID>
+```
+
+Log in with the Google account that owns your Nest thermostat(s) and complete the consent
+flow (approve each prompt). After approval you will land on google.com with a URL like:
+```
+https://www.google.com/?code=4/0Adxxxxx...&scope=...
+```
+
+Copy the value after `code=` and before `&scope` — this is your **authorization code**.
+
+> ⚠️ The authorization code expires within a few minutes. Run the next step immediately.
+
+**Step 2 — Exchange the code for a new refresh token:**
+
+```bash
+curl -s -X POST https://oauth2.googleapis.com/token \
+  -d "client_id=<CLIENT_ID>" \
+  -d "client_secret=<CLIENT_SECRET>" \
+  -d "code=<AUTHORIZATION_CODE>" \
+  -d "grant_type=authorization_code" \
+  -d "redirect_uri=https://www.google.com"
+```
+
+The response will contain a `refresh_token` field. Copy that value.
+
+**Step 3 — Update the config file with the new refresh token:**
+
+```bash
+sudo nano /etc/zabbix/nest_to_zabbix.conf
+```
+
+Replace the `refresh_token` value with the one from Step 2, save and exit.
+
+**Step 4 — Verify the fix:**
+
+```bash
+sudo -u zabbix python3 /usr/lib/zabbix/externalscripts/nest_to_zabbix.py --metric current_temp
+```
+
+You should see a temperature value. If you do, Zabbix will recover automatically on the
+next polling cycle.
+
+> **Going forward:** As of v0.1.3 the script automatically saves any rotated refresh
+> token back to the config file, so you should not need to do this again unless the token
+> is explicitly revoked (password change, account security event, or extended inactivity
+> while your app is in Testing mode).
+
 ---
 
 ## Possible Future Enhancements
