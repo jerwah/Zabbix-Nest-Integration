@@ -14,6 +14,19 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [0.2.1] - 2026-04-20
+### Added
+- README Step 1.6: instructions for publishing the OAuth app from "Testing" to
+  "In production" status in Google Cloud Console — required for unattended 24/7
+  monitoring. In Testing mode Google hard-expires all refresh tokens 7 days after
+  issuance regardless of activity, making continuous monitoring impossible.
+### Fixed
+- README Step 1.5 refresh token expiry warning corrected: previously stated
+  "7 days pass without use" which is inaccurate — the 7-day limit applies from
+  token issuance, not from last use.
+
+---
+
 ## [0.2.0] - 2026-04-13
 ### Added
 - `nest_auth_setup.py` — interactive OAuth setup wizard (rclone-style):

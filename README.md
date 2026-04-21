@@ -169,16 +169,42 @@ The wizard will:
 5. Write `/etc/zabbix/nest_to_zabbix.conf` with `600` permissions owned by the `zabbix` user
 6. Call the SDM API to verify your credentials work and print all discovered thermostats with their device IDs
 
-> **⚠️ Refresh Token Expiry** — Google refresh tokens can be revoked if:
-> - Your app is in "Testing" mode and 7 days pass without use
+> **⚠️ Refresh Token Expiry** — Google refresh tokens will be revoked if:
+> - Your app is in **"Testing"** publishing status — Google hard-expires all tokens
+>   **7 days after they are issued**, regardless of activity. See Step 1.6.
 > - You change your Google account password
 > - You revoke access in Google account settings
 >
 > As of v0.1.3 the script automatically persists any rotated refresh token back to the
 > config file, so routine rotation is handled for you. However, if the token is outright
-> revoked (e.g. after a password change or a long period of inactivity) you will see an
-> `invalid_grant` error — see the [Troubleshooting](#troubleshooting) section, which
-> includes instructions for re-running the wizard to recover.
+> revoked you will see an `invalid_grant` error — see the
+> [Troubleshooting](#troubleshooting) section, which includes instructions for
+> re-running the wizard to recover.
+
+### Step 1.6 — Publish the App (Required for 24/7 monitoring)
+
+By default your OAuth app is in **Testing** publishing status. Google enforces a
+**hard 7-day expiry** on all refresh tokens issued to Testing-mode apps — the token
+will stop working exactly 7 days after it was issued, regardless of how often it is
+used. This makes unattended 24/7 monitoring impossible without weekly re-authorization.
+
+The fix is a one-time change in Google Cloud Console. For a personal-use app like this,
+publishing to **In production** does not require Google's formal review process — it
+simply removes the 7-day Testing restriction.
+
+1. Go to [console.cloud.google.com](https://console.cloud.google.com) and select your project
+2. In the left menu, go to **APIs & Services → Audience**
+3. Under **Publishing status**, click **Publish App**
+4. Google will show a warning about the app being unverified — this is expected and safe
+   for personal use. Click **Confirm**.
+5. The status will change to **In production**
+
+Once published, refresh tokens issued to your account will no longer expire after 7 days.
+They will remain valid until explicitly revoked (password change, manual revocation, etc.).
+
+> **Note:** After publishing, re-run `sudo python3 scripts/nest_auth_setup.py` once to
+> issue a fresh token under the new production status. Tokens issued while the app was
+> in Testing mode are still subject to the 7-day limit.
 
 <details>
 <summary>Manual authorization steps (without the wizard)</summary>
