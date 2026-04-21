@@ -53,6 +53,9 @@ Desktop.ini
 # --- Log files ---
 *.log
 
+# --- Local-only notes ---
+TODO.md
+
 # ============================================================
 # REMINDER: The file you are allowed to commit is:
 #   scripts/nest_to_zabbix.conf.example   ← safe fake values
