@@ -14,6 +14,13 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
+## [0.2.2] - 2026-05-08
+### Changed
+- Updated `PRIVACY.md` with more explicit details on data handling, storage, and deletion to meet Google API Services User Data Policy requirements.
+- Clarified details about the 5-minute temporary cache file and the process for replacing an exposed OAuth token.
+
+---
+
 ## [0.2.1] - 2026-04-20
 ### Added
 - README Step 1.6: instructions for publishing the OAuth app from "Testing" to
