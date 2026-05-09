@@ -388,7 +388,7 @@ You should see a temperature value. Zabbix will recover automatically on the nex
 ## Possible Future Enhancements
 
 Ideas for future development (not yet planned):
-- Nothing currently planned — open an Issue if you have a suggestion
+- Create a public-facing tutorial video for the setup process.
 
 ---
 
