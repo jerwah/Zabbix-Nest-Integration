@@ -35,18 +35,17 @@ Data Flow:
 
 ### Data Storage & Protection: Your practices for securely storing and protecting user data.
 
-*  ** Storage **
-  *   **Thermostat Data (Temperature, Humidity, etc.):** This data is considered ephemeral and not stored long-term. To be a good Internet citizen and avoid flooding Google's servers with API calls if you have 10 thermostats, the application uses a temporary cache. The complete data response from Google is saved to a file in `/tmp/` for a maximum of 5 minutes. This significantly reduces the number of API calls made for frequent Zabbix checks. After 5 minutes, the cached file is considered stale and is deleted or overwritten on the next run. This is the only time your thermostat readings touch a disk (your disk), and it's done purely for rate-limiting, not for data collection.
-  *   **OAuth Refresh Token:** The single piece of Google user data that is stored long term is the OAuth Refresh Token. This is necessary for the application to re-authenticate with Google's API without requiring you to log in every time it runs.
-      *   **Storage Location:** The token is stored in a local configuration file on your server at `/etc/zabbix/nest_to_zabbix.conf`.
-      
+#### Storage
+*   **Thermostat Data (Temperature, Humidity, etc.):** This data is considered ephemeral and not stored long-term. To be a good Internet citizen and avoid flooding Google's servers with API calls if you have 10 thermostats, the application uses a temporary cache. The complete data response from Google is saved to a file in `/tmp/` for a maximum of 5 minutes. This significantly reduces the number of API calls made for frequent Zabbix checks. After 5 minutes, the cached file is considered stale and is deleted or overwritten on the next run. This is the only time your thermostat readings touch a disk (your disk), and it's done purely for rate-limiting, not for data collection.
+*   **OAuth Refresh Token:** The single piece of Google user data that is stored long term is the OAuth Refresh Token. This is necessary for the application to re-authenticate with Google's API without requiring you to log in every time it runs.
+    *   **Storage Location:** The token is stored in a local configuration file on your server at `/etc/zabbix/nest_to_zabbix.conf`.
 
-*  ** Protection **
-  *   **OAuth Token Protection:** The project's documentation and the `nest_auth_setup.py` script explicitly configure this file to have strict `600` permissions, making it readable and writable **only** by the `zabbix` system user on your server and root. This prevents other users on the system from accessing your credentials.
-  *   **Thermostat Data Cache File:** The cache file in /tmp is created with `600` permissions, making it readable and writable **only** by the `zabbix` system user as well.
-  *   **Encryption in Transit:** Your thermostat data is encrypted in transit when being retrieved via the Google SDM API. If your zabbix configuration is setup for encrpytion then it is sent to your Zabbix server encrypted. If your Zabbix server is not setup for encryption, then it is not encrypted.
-      * The typical use case of this application is to run this code on the Zabbix server so this distinction is normally not a concern.
-          * Setting up encryption for your zabbix server is your responsibility if the app and zabbix server are connected over an untrusted network. 
+#### Protection
+*   **OAuth Token Protection:** The project's documentation and the `nest_auth_setup.py` script explicitly configure this file to have strict `600` permissions, making it readable and writable **only** by the `zabbix` system user on your server and root. This prevents other users on the system from accessing your credentials.
+*   **Thermostat Data Cache File:** The cache file in /tmp is created with `600` permissions, making it readable and writable **only** by the `zabbix` system user as well.
+*   **Encryption in Transit:** Your thermostat data is encrypted in transit when being retrieved via the Google SDM API. If your zabbix configuration is setup for encrpytion then it is sent to your Zabbix server encrypted. If your Zabbix server is not setup for encryption, then it is not encrypted.
+    * The typical use case of this application is to run this code on the Zabbix server so this distinction is normally not a concern.
+    * Setting up encryption for your zabbix server is your responsibility if the app and zabbix server are connected over an untrusted network.
 
 
 ### Data Retention & Deletion: Your policy on how long user data is retained and an accessible process for users to request the deletion of their data.
