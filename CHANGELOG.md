@@ -10,12 +10,9 @@ Version numbers follow [Semantic Versioning](https://semver.org/):
 
 ---
 
-## [Unreleased]
-
----
-
-## [0.2.2] - 2026-05-08
+## [0.2.2] - 2026-05-19
 ### Changed
+- Confirmed Google App approval for "In Production" status.
 - Updated `PRIVACY.md` with more explicit details on data handling, storage, and deletion to meet Google API Services User Data Policy requirements.
 - Clarified details about the 5-minute temporary cache file and the process for replacing an exposed OAuth token.
 

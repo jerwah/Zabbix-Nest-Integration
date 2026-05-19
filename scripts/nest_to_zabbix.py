@@ -60,7 +60,7 @@ import urllib.request
 # -----------------------------------------------------------------
 # Version
 # -----------------------------------------------------------------
-__version__ = "0.1.3"
+__version__ = "0.2.2"
 
 # -----------------------------------------------------------------
 # Constants
@@ -419,6 +419,11 @@ def main():
             "Full device resource name or trailing device ID. "
             "Required when monitoring multiple thermostats."
         ),
+    )
+    parser.add_argument(
+        "-v", "--version",
+        action="version",
+        version=f"%(prog)s {__version__}"
     )
     args = parser.parse_args()
 

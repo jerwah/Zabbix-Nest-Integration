@@ -193,7 +193,7 @@ publishing to **In production** does not require Google's formal review process 
 simply removes the 7-day Testing restriction.
 
 1. Go to [console.cloud.google.com](https://console.cloud.google.com) and select your project
-2. In the left menu, go to **APIs & Services → Audience**
+2. In the left menu, go to **APIs & Services → OAuth consent screen**
 3. Under **Publishing status**, click **Publish App**
 4. Google will show a warning about the app being unverified — this is expected and safe
    for personal use. Click **Confirm**.
