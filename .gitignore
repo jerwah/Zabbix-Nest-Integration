@@ -63,3 +63,4 @@ JRW_TODO.md
 # The file you must NEVER commit is:
 #   scripts/nest_to_zabbix.conf           ← real credentials
 # ============================================================
+*.code-workspace
